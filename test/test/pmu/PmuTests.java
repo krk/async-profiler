@@ -37,9 +37,12 @@ public class PmuTests {
             p.profile("-e cache-misses -d 3 -o collapsed -f %f");
 
             Output out = p.readFile("%f");
+            System.out.println("OUT: " + out);
+
             Assert.isLess(out.ratio("test/pmu/Dictionary.test16K"), 0.2);
             Assert.isGreater(out.ratio("test/pmu/Dictionary.test8M"), 0.8);
         } catch (Exception e) {
+            System.out.println("PROFERR: " + p.readFile(TestProcess.PROFERR));
             if (!p.readFile(TestProcess.PROFERR).contains("Perf events unavailable")) {
                 throw e;
             }

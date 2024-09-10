@@ -581,6 +581,7 @@ int PerfEvents::createForThread(int tid) {
             // Emergency shutdown
             stop();
         }
+        printf("createForThread 2: err = %d\n", err);
         return err;
     }
 
@@ -599,6 +600,7 @@ int PerfEvents::createForThread(int tid) {
     ex.pid = tid;
 
     int err;
+    printf("createForThread 3: err undef = %d\n", err);
     if (fcntl(fd, F_SETFL, O_ASYNC) < 0 || fcntl(fd, F_SETSIG, _signal) < 0 || fcntl(fd, F_SETOWN_EX, &ex) < 0) {
         err = errno;
         Log::warn("perf_event fcntl failed: %s", strerror(err));
@@ -617,6 +619,7 @@ int PerfEvents::createForThread(int tid) {
     close(fd);
     _events[tid]._fd = 0;
 
+    printf("createForThread last: err = %d\n", err);
     return err;
 }
 
@@ -816,6 +819,7 @@ Error PerfEvents::start(Arguments& args) {
     // Create perf_events for all existing threads
     int err = createForAllThreads();
     if (err) {
+        printf("createForAllThreads result: err %d = '%s'\n", err, strerror(err));
         stop();
         if (err == EACCES || err == EPERM) {
             return Error("No access to perf events. Try --fdtransfer or --all-user option or 'sysctl kernel.perf_event_paranoid=1'");
