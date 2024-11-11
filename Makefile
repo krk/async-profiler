@@ -47,6 +47,9 @@ API_SOURCES := $(wildcard src/api/one/profiler/*.java)
 CONVERTER_SOURCES := $(shell find src/converter -name '*.java')
 TEST_SOURCES := $(shell find test -name '*.java')
 TESTS ?= $(notdir $(patsubst %/,%,$(wildcard test/test/*/)))
+REPORTS_DIR := build/reports
+
+ANALYZER_TAG ?= asprof-analyzer
 
 ifeq ($(JAVA_HOME),)
   export JAVA_HOME:=$(shell java -cp . JavaHome)
@@ -188,6 +191,31 @@ native:
 	tar xfO async-profiler-$(PROFILER_VERSION)-linux-x64.tar.gz */build/libasyncProfiler.so > native/linux-x64/libasyncProfiler.so
 	tar xfO async-profiler-$(PROFILER_VERSION)-linux-arm64.tar.gz */build/libasyncProfiler.so > native/linux-arm64/libasyncProfiler.so
 	unzip -p async-profiler-$(PROFILER_VERSION)-macos.zip */build/libasyncProfiler.dylib > native/macos/libasyncProfiler.dylib
+
+build-analyzer:
+	docker build -t "$(ANALYZER_TAG)" - < Dockerfile.analyzer
+
+docker-analyze:
+	docker run -u "$$(id -u):$$(id -g)" -it -v"$$(pwd)":/app "$(ANALYZER_TAG)"
+
+analyze: clean
+	rm -rf $(REPORTS_DIR)
+	mkdir -p $(REPORTS_DIR)
+	CodeChecker analyzers
+	CodeChecker log -o $(REPORTS_DIR)/compile_commands.all.json -b "$(MAKE) all MERGE=false"
+
+# Delete filenames that are not in src in the json, otherwise ctu analysis fails.
+	jq 'del( .[] | select(.file | test("^src/") | not))' $(REPORTS_DIR)/compile_commands.all.json > $(REPORTS_DIR)/compile_commands.json
+
+# Some analyzers may error out, ignore exit codes.
+	-CodeChecker analyze --ctu $(REPORTS_DIR)/compile_commands.json --enable security --enable sensitive -o $(REPORTS_DIR)/codechecker-raw &> $(REPORTS_DIR)/analyze.out.txt
+
+	-CodeChecker parse --print-steps $(REPORTS_DIR)/codechecker-raw > $(REPORTS_DIR)/codechecker-txt
+	mkdir -p $(REPORTS_DIR)/codechecker-html
+	-CodeChecker parse --export html --output $(REPORTS_DIR)/codechecker-html $(REPORTS_DIR)/codechecker-raw
+
+# Delete redundant files CodeChecker may create.
+	rm -rf '<stdin>.s' a.out
 
 clean:
 	$(RM) -r build

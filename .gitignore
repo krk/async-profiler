@@ -7,3 +7,4 @@
 .vscode
 *.iml
 /src/api/**/*.class
+<stdin>.s
