@@ -3,7 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include "asprof.h"
 #include "assert.h"
 #include "codeCache.h"
 #include "mallocTracer.h"
@@ -73,44 +72,12 @@ extern "C" void free_hook(void* addr) {
     }
 }
 
-
 u64 MallocTracer::_interval;
 volatile u64 MallocTracer::_allocated_bytes;
 
 Mutex MallocTracer::_patch_lock;
-int MallocTracer::_patched_libs = 0;
 bool MallocTracer::_initialized = false;
 volatile bool MallocTracer::_running = false;
-
-void MallocTracer::initialize() {
-    CodeCache* lib = Profiler::instance()->findLibraryByAddress((void*)MallocTracer::initialize);
-    assert(lib);
-
-    lib->mark(
-        [](const char* s) -> bool {
-            return strcmp(s, "malloc_hook") == 0
-                || strcmp(s, "calloc_hook") == 0
-                || strcmp(s, "realloc_hook") == 0
-                || strcmp(s, "free_hook") == 0;
-        },
-        MARK_ASYNC_PROFILER);
-}
-
-void MallocTracer::patchLibraries() {
-    MutexLocker ml(_patch_lock);
-
-    CodeCacheArray* native_libs = Profiler::instance()->nativeLibs();
-    int native_lib_count = native_libs->count();
-
-    while (_patched_libs < native_lib_count) {
-        CodeCache* cc = (*native_libs)[_patched_libs++];
-
-        cc->patchImport(im_malloc, (void*)malloc_hook);
-        cc->patchImport(im_calloc, (void*)calloc_hook);
-        cc->patchImport(im_realloc, (void*)realloc_hook);
-        cc->patchImport(im_free, (void*)free_hook);
-    }
-}
 
 void MallocTracer::recordMalloc(void* address, size_t size) {
     if (updateCounter(_allocated_bytes, size, _interval)) {

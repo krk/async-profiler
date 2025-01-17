@@ -19,10 +19,10 @@ class MallocTracer : public Engine {
     static volatile u64 _allocated_bytes;
 
     static Mutex _patch_lock;
-    static int _patched_libs;
     static bool _initialized;
     static volatile bool _running;
 
+    static int _patched_libs;
     static void initialize();
     static void patchLibraries();
 
@@ -55,5 +55,14 @@ class MallocTracer : public Engine {
     static void recordMalloc(void* address, size_t size);
     static void recordFree(void* address);
 };
+
+template <typename FuncType, FuncType F>
+struct Hook {
+    static constexpr FuncType orig = F;
+};
+
+#define ASSERT_HOOK_SIGNATURE(structName, fn)                                      \
+    static_assert(std::is_same<decltype(&structName::hook), decltype(&fn)>::value, \
+                  "hook function signature must match the hooked function.")
 
 #endif // _MALLOCTRACER_H

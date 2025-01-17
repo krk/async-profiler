@@ -39,7 +39,7 @@ public class NativememTests {
         Assert.isEqual(out.samples("Java_test_nativemem_Native_calloc"), 0);
     }
 
-    @Test(mainClass = CallsMallocCalloc.class, os = Os.LINUX)
+    @Test(mainClass = CallsMallocCalloc.class)
     public void canAsprofTraceMallocCalloc(TestProcess p) throws Exception {
         Output out = p.profile("-e nativemem --total -o collapsed -d 2");
         long samplesMalloc = out.samples("Java_test_nativemem_Native_malloc");
@@ -51,7 +51,7 @@ public class NativememTests {
         Assert.isEqual(samplesCalloc % CALLOC_SIZE, 0);
     }
 
-    @Test(mainClass = CallsRealloc.class, agentArgs = "start,nativemem,total,collapsed,file=%f", args = "once", os = Os.LINUX)
+    @Test(mainClass = CallsRealloc.class, agentArgs = "start,nativemem,total,collapsed,file=%f", args = "once")
     public void canAgentTraceRealloc(TestProcess p) throws Exception {
         Output out = p.waitForExit("%f");
 
@@ -59,7 +59,7 @@ public class NativememTests {
         Assert.isEqual(out.samples("Java_test_nativemem_Native_realloc"), REALLOC_SIZE);
     }
 
-    @Test(mainClass = CallsRealloc.class, os = Os.LINUX)
+    @Test(mainClass = CallsRealloc.class)
     public void canAsprofTraceRealloc(TestProcess p) throws Exception {
         Output out = p.profile("-e nativemem --total -o collapsed -d 2");
         long samplesMalloc = out.samples("Java_test_nativemem_Native_malloc");
@@ -71,7 +71,7 @@ public class NativememTests {
         Assert.isEqual(samplesRealloc % REALLOC_SIZE, 0);
     }
 
-    @Test(mainClass = CallsAllNoLeak.class, os = Os.LINUX)
+    @Test(mainClass = CallsAllNoLeak.class)
     public void canAsprofTraceAllNoLeak(TestProcess p) throws Exception {
         Output out = p.profile("-e nativemem --total -o collapsed -d 2");
 
@@ -87,11 +87,38 @@ public class NativememTests {
         Assert.isEqual(samplesRealloc % REALLOC_SIZE, 0);
     }
 
+    @Test(mainClass = MallocZones.class, os = Os.MACOS, agentArgs = "start,nativemem,total,collapsed,file=%f", args = "once")
+    public void canAgentTraceZoneAllocs(TestProcess p) throws Exception {
+        Output out = p.waitForExit("%f");
+
+        long samplesMalloc = out.samples("Java_test_nativemem_Native_malloc");
+        long samplesTypeRealloc = out.samples("Java_test_nativemem_Native_typeRealloc");
+        long samplesTypeMemalign = out.samples("Java_test_nativemem_Native_typeMemalign");
+        long samplesZoneMalloc = out.samples("Java_test_nativemem_Native_zoneMalloc");
+        long samplesZoneCalloc = out.samples("Java_test_nativemem_Native_zoneCalloc");
+        long samplesZoneValloc = out.samples("Java_test_nativemem_Native_zoneValloc");
+
+        Assert.isGreater(samplesMalloc, 0);
+        Assert.isGreater(samplesTypeRealloc, 0);
+        Assert.isGreater(samplesTypeMemalign, 0);
+        Assert.isGreater(samplesZoneMalloc, 0);
+        Assert.isGreater(samplesZoneCalloc, 0);
+        Assert.isGreater(samplesZoneValloc, 0);
+
+        Assert.isEqual(samplesMalloc % MALLOC_SIZE, 0);
+        Assert.isEqual(samplesTypeRealloc % REALLOC_SIZE, 0);
+        Assert.isEqual(samplesTypeMemalign % MALLOC_SIZE, 0);
+        Assert.isEqual(samplesZoneMalloc % MALLOC_SIZE, 0);
+        Assert.isEqual(samplesZoneCalloc % CALLOC_SIZE, 0);
+        Assert.isEqual(samplesZoneValloc % MALLOC_SIZE, 0);
+    }
+
     @Test(mainClass = CallsAllNoLeak.class, args = "once", agentArgs = "start,nativemem,file=%f.jfr")
     @Test(mainClass = CallsAllNoLeak.class, args = "once", agentArgs = "start,nativemem,total,file=%f.jfr")
     @Test(mainClass = CallsAllNoLeak.class, args = "once", agentArgs = "start,nativemem=1,total,file=%f.jfr")
     @Test(mainClass = CallsAllNoLeak.class, args = "once", agentArgs = "start,nativemem=10M,total,file=%f.jfr")
     @Test(mainClass = CallsAllNoLeak.class, args = "once", agentArgs = "start,cpu,alloc,nativemem,total,file=%f.jfr")
+    @Test(mainClass = MallocZones.class, os = Os.MACOS, args = "once", agentArgs = "start,nativemem,total,file=%f.jfr" /* Tests free_definite_size */)
     public void livenessJfrHasStacks(TestProcess p) throws Exception {
         p.waitForExit();
         String filename = p.getFile("%f").toPath().toString();

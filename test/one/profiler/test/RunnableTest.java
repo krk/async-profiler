@@ -35,6 +35,7 @@ public class RunnableTest {
     public String testInfo() {
         return testName() +
                 (!test().args().isEmpty() ? " args: " + test().args() : "") +
+                (!test().agentArgs().isEmpty() ? " agentArgs: " + test().agentArgs() : "") +
                 (test().inputs().length > 0 ? " inputs: [" + String.join(" ", test().inputs()) + "]" : "");
     }
 }
