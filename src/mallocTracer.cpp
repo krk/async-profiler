@@ -13,9 +13,9 @@
 #include <dlfcn.h>
 #include <string.h>
 
-#define ADDRESS_OF(sym) ({               \
-    void* addr = dlsym(RTLD_NEXT, #sym); \
-    addr != NULL ? (sym##_t)addr : sym;  \
+#define ADDRESS_OF(sym) ({                  \
+    void* addr = dlsym(RTLD_DEFAULT, #sym); \
+    addr != NULL ? (sym##_t)addr : sym;     \
 })
 
 typedef void* (*malloc_t)(size_t);
@@ -113,14 +113,29 @@ void MallocTracer::initialize() {
 
     lib->mark(
         [](const char* s) -> bool {
-            return strcmp(s, "malloc_hook") == 0
-                || strcmp(s, "calloc_hook") == 0
-                || strcmp(s, "realloc_hook") == 0
-                || strcmp(s, "free_hook") == 0
-                || strcmp(s, "posix_memalign_hook") == 0
-                || strcmp(s, "aligned_alloc_hook") == 0;
+            return strcmp(s, "malloc_hook") == 0 || strcmp(s, "calloc_hook") == 0 || strcmp(s, "realloc_hook") == 0 || strcmp(s, "free_hook") == 0 || strcmp(s, "posix_memalign_hook") == 0 || strcmp(s, "aligned_alloc_hook") == 0;
         },
         MARK_ASYNC_PROFILER);
+
+    void* malloc_default = dlsym(RTLD_DEFAULT, "malloc");
+    void* malloc_next = dlsym(RTLD_NEXT, "malloc");
+
+    printf("malloc        : %p\n", (void*)malloc);
+    printf("malloc_default: %p\n", malloc_default);
+    printf("malloc_next   : %p\n", malloc_next);
+
+    Dl_info info;
+    if (dladdr(malloc_default, &info)) {
+        printf("malloc_default Library path: %s\n", info.dli_fname);
+    } else {
+        printf("malloc_default Could not retrieve module information.\n");
+    }
+
+    if (dladdr(malloc_next, &info)) {
+        printf("malloc_next Library path: %s\n", info.dli_fname);
+    } else {
+        printf("malloc_next Could not retrieve module information.\n");
+    }
 }
 
 // To avoid complexity in hooking and tracking reentrancy, a TLS-based approach is not used.
