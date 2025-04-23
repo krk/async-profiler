@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+#include <dlfcn.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
@@ -233,13 +234,28 @@ void CodeCache::addImport(void** entry, const char* name) {
 
 void** CodeCache::findImport(ImportId id) {
     if (!_imports_patchable) {
+        void *handle = dlopen(name(), RTLD_LAZY | RTLD_NOLOAD);
+
+        // ignore and clear any dl errors.
+        dlerror();
+
         makeImportsPatchable();
+
+        if (handle) {
+            dlclose(handle);
+        }
+
         _imports_patchable = true;
     }
     return _imports[id][PRIMARY];
 }
 
 void CodeCache::patchImport(ImportId id, void* hook_func) {
+    void *handle = dlopen(name(), RTLD_LAZY | RTLD_NOLOAD);
+
+    // ignore and clear any dl errors.
+    dlerror();
+
     if (!_imports_patchable) {
         makeImportsPatchable();
         _imports_patchable = true;
@@ -250,6 +266,10 @@ void CodeCache::patchImport(ImportId id, void* hook_func) {
         if (entry != NULL) {
             *entry = hook_func;
         }
+    }
+
+    if (handle) {
+        dlclose(handle);
     }
 }
 
