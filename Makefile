@@ -69,6 +69,9 @@ TESTS ?=
 CPP_TEST_SOURCES := test/native/testRunner.cpp $(shell find test/native -name '*Test.cpp')
 CPP_TEST_HEADER := test/native/testRunner.hpp
 CPP_TEST_INCLUDES := -Isrc -Itest/native
+REPORTS_DIR := build/reports
+
+ANALYZER_TAG ?= asprof-analyzer
 
 ifeq ($(JAVA_HOME),)
   JAVA_HOME:=$(shell java -cp . JavaHome)
@@ -282,6 +285,31 @@ format-md:
 
 clean-coverage:
 	$(RM) -rf build/test/cpptests build/test/coverage
+
+build-analyzer:
+	docker build -t "$(ANALYZER_TAG)" - < Dockerfile.analyzer
+
+docker-analyze:
+	docker run -u "$$(id -u):$$(id -g)" -it -v"$$(pwd)":/app "$(ANALYZER_TAG)"
+
+analyze: clean
+	rm -rf $(REPORTS_DIR)
+	mkdir -p $(REPORTS_DIR)
+	CodeChecker analyzers
+	CodeChecker log -o $(REPORTS_DIR)/compile_commands.all.json -b "$(MAKE) all MERGE=false"
+
+# Delete filenames that are not in src in the json, otherwise ctu analysis fails.
+	jq 'del( .[] | select(.file | test("^src/") | not))' $(REPORTS_DIR)/compile_commands.all.json > $(REPORTS_DIR)/compile_commands.json
+
+# Some analyzers may error out, ignore exit codes.
+	-CodeChecker analyze --ctu $(REPORTS_DIR)/compile_commands.json --enable profile:security --enable sensitive -o $(REPORTS_DIR)/codechecker-raw &> $(REPORTS_DIR)/analyze.out.txt
+
+	-CodeChecker parse --print-steps $(REPORTS_DIR)/codechecker-raw > $(REPORTS_DIR)/codechecker-txt
+	mkdir -p $(REPORTS_DIR)/codechecker-html
+	-CodeChecker parse --export html --output $(REPORTS_DIR)/codechecker-html $(REPORTS_DIR)/codechecker-raw
+
+# Delete redundant files CodeChecker may create.
+	rm -rf '<stdin>.s' a.out
 
 clean:
 	$(RM) -r build
