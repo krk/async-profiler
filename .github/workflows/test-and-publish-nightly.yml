@@ -82,6 +82,11 @@ jobs:
             use-builtin-jdk: true
             java-distribution: liberica
             java-version: 21
+          - test-platform: linux-x64-alpaquita-25
+            container-image: alpaquita:x86_64-liberica-25
+            use-builtin-jdk: true
+            java-distribution: liberica
+            java-version: 25
     uses: ./.github/workflows/integ.yml
     with:
       platform: linux-x64
