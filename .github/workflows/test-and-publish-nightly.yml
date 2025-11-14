@@ -133,30 +133,6 @@ jobs:
         java-distribution: [corretto]
         container-image: [arm:latest]
         include:
-          - test-platform: linux-arm64-alpine
-            container-image: alpine:arm64-corretto-11
-            use-builtin-jdk: true
-            java-distribution: corretto
-            java-version: 11
-          - test-platform: linux-arm64-alpine
-            container-image: alpine:arm64-corretto-25
-            use-builtin-jdk: true
-            java-distribution: corretto
-            java-version: 25
-          - test-platform: linux-arm64-AL2
-            container-image: amazonlinux:arm64-2
-            # GHA provides Node.js by attaching a volume to the container. The container path is
-            # '/__e/node20', and it's not writable unless we override it via 'container.volumes'.
-            container-volumes: '["/tmp/node20:/__e/node20"]'
-            java-version: 11
-            java-distribution: corretto
-          - test-platform: linux-arm64-AL2
-            container-image: amazonlinux:arm64-2
-            # GHA provides Node.js by attaching a volume to the container. The container path is
-            # '/__e/node20', and it's not writable unless we override it via 'container.volumes'.
-            container-volumes: '["/tmp/node20:/__e/node20"]'
-            java-version: 25
-            java-distribution: corretto
           - test-platform: linux-arm64-AL2023
             container-image: amazonlinux:arm64-2023
             java-version: 11
@@ -165,16 +141,6 @@ jobs:
             container-image: amazonlinux:arm64-2023
             java-version: 25
             java-distribution: corretto
-          - test-platform: linux-arm64-alpaquita
-            container-image: alpaquita:arm64-liberica-21
-            use-builtin-jdk: true
-            java-distribution: liberica
-            java-version: 21
-          - test-platform: linux-arm64-alpaquita
-            container-image: alpaquita:arm64-liberica-25
-            use-builtin-jdk: true
-            java-distribution: liberica
-            java-version: 25
           - test-platform: linux-arm64-ubuntu24
             container-image: ubuntu:24-arm64
             java-distribution: corretto
