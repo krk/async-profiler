@@ -263,7 +263,14 @@ test-cpp: build-test-cpp
 
 test-java: build-test-java
 	echo "Running tests against $(LIB_PROFILER)"
-	$(JAVA) $(TEST_FLAGS) -ea -cp "build/$(TEST_JAR):build/jar/*:$(TEST_DEPS_DIR)/*:$(TEST_GEN_DIR)/*" one.profiler.test.Runner $(subst $(COMMA), ,$(TESTS))
+	echo "Starting 1000 runs of test-java..."
+	@K=1; \
+	while [ $$K -le 1000 ]; do \
+		echo "--- Run $$K ---"; \
+		$(JAVA) $(TEST_FLAGS) -ea -cp "build/$(TEST_JAR):build/jar/*:$(TEST_DEPS_DIR)/*:$(TEST_GEN_DIR)/*" one.profiler.test.Runner $(subst $(COMMA), ,$(TESTS)) || exit 1; \
+		K=$$(($$K + 1)); \
+	done
+	echo "Completed all runs successfully."
 
 coverage: override FAT_BINARY=false
 coverage: clean-coverage
