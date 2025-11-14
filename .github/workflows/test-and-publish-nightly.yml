@@ -155,6 +155,9 @@ jobs:
           - runner: macos-15
             test-platform: macos-arm64
             java-version: "21"
+          - runner: macos-15
+            test-platform: macos-arm64
+            java-version: "25"
           - runner: macos-15-intel
             test-platform: macos-x64
             java-version: "17"
