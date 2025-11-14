@@ -66,6 +66,11 @@ jobs:
             use-builtin-jdk: true
             java-distribution: corretto
             java-version: 11
+          - test-platform: linux-x64-alpine
+            container-image: alpine:corretto-11
+            use-builtin-jdk: true
+            java-distribution: corretto
+            java-version: 25
           - test-platform: linux-x64-AL2
             container-image: amazonlinux:2
             # GHA provides Node.js by attaching a volume to the container. The container path is
@@ -73,19 +78,38 @@ jobs:
             container-volumes: '["/tmp/node20:/__e/node20"]'
             java-version: 11
             java-distribution: corretto
+          - test-platform: linux-x64-AL2
+            container-image: amazonlinux:2
+            # GHA provides Node.js by attaching a volume to the container. The container path is
+            # '/__e/node20', and it's not writable unless we override it via 'container.volumes'.
+            container-volumes: '["/tmp/node20:/__e/node20"]'
+            java-version: 25
+            java-distribution: corretto
           - test-platform: linux-x64-AL2023
             container-image: amazonlinux:2023
             java-version: 11
+            java-distribution: corretto
+          - test-platform: linux-x64-AL2023
+            container-image: amazonlinux:2023
+            java-version: 25
             java-distribution: corretto
           - test-platform: linux-x64-alpaquita
             container-image: alpaquita:x86_64-liberica-21
             use-builtin-jdk: true
             java-distribution: liberica
             java-version: 21
-          - test-platform: linux-x64-alpaquita-25
+          - test-platform: linux-x64-alpaquita
             container-image: alpaquita:x86_64-liberica-25
             use-builtin-jdk: true
             java-distribution: liberica
+            java-version: 25
+          - test-platform: linux-x64-ubuntu24
+            container-image: ubuntu:24-x86_64
+            java-distribution: corretto
+            java-version: 11
+          - test-platform: linux-x64-ubuntu24
+            container-image: ubuntu:24-x86_64
+            java-distribution: corretto
             java-version: 25
     uses: ./.github/workflows/integ.yml
     with:
