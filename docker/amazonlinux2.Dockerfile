@@ -15,7 +15,7 @@ WORKDIR /node
 ENV CC=gcc10-cc
 ENV CXX=gcc10-c++
 RUN ./configure
-RUN make -j4 -s > /dev/null
+RUN make -j`nproc` -s > /dev/null
 RUN make install
 
 FROM public.ecr.aws/amazonlinux/amazonlinux:2
