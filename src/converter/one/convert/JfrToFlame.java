@@ -6,9 +6,11 @@
 package one.convert;
 
 import one.jfr.JfrReader;
+import one.jfr.NativeStackTrace;
 import one.jfr.StackTrace;
 import one.jfr.event.AllocationSample;
 import one.jfr.event.Event;
+import one.jfr.event.ExecutionSample;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -34,16 +36,33 @@ public class JfrToFlame extends JfrConverter {
 
             @Override
             public void visit(Event event, long value) {
+                Arguments args = JfrToFlame.this.args;
+
+                // Check for native stack trace
+                boolean hasNativeStack = false;
+                NativeStackTrace nativeStackTrace = null;
+                if (event instanceof ExecutionSample) {
+                    ExecutionSample execSample = (ExecutionSample) event;
+                    if (execSample.nativeStackTraceId != 0) {
+                        nativeStackTrace = jfr.nativeStackTraces.get(execSample.nativeStackTraceId);
+                        hasNativeStack = nativeStackTrace != null;
+                    }
+                }
+
                 StackTrace stackTrace = jfr.stackTraces.get(event.stackTraceId);
+                if (stackTrace == null && !hasNativeStack) {
+                    return;
+                }
+
+                if (args.threads) {
+                    stack.push(getThreadName(event.tid), TYPE_NATIVE);
+                }
+
                 if (stackTrace != null) {
-                    Arguments args = JfrToFlame.this.args;
                     long[] methods = stackTrace.methods;
                     byte[] types = stackTrace.types;
                     int[] locations = stackTrace.locations;
 
-                    if (args.threads) {
-                        stack.push(getThreadName(event.tid), TYPE_NATIVE);
-                    }
                     if (args.classify) {
                         Classifier.Category category = getCategory(stackTrace);
                         stack.push(category.title, category.type);
@@ -63,10 +82,18 @@ public class JfrToFlame extends JfrConverter {
                         stack.push(getClassName(classId), (event instanceof AllocationSample)
                                 && ((AllocationSample) event).tlabSize == 0 ? TYPE_KERNEL : TYPE_INLINED);
                     }
-
-                    fg.addSample(stack, value);
-                    stack.clear();
                 }
+
+                // Process native frames if available
+                if (hasNativeStack) {
+                    long[] pcs = nativeStackTrace.pcs;
+                    for (int i = pcs.length; --i >= 0; ) {
+                        stack.push(getNativeFrameName(pcs[i]), TYPE_NATIVE);
+                    }
+                }
+
+                fg.addSample(stack, value);
+                stack.clear();
             }
         });
     }

@@ -12,9 +12,15 @@ public class ExecutionSample extends Event {
 
     public final int threadState;
     public final int samples;
+    public final int nativeStackTraceId;
 
     public ExecutionSample(long time, int tid, int stackTraceId, int threadState, int samples) {
+        this(time, tid, stackTraceId, 0, threadState, samples);
+    }
+
+    public ExecutionSample(long time, int tid, int stackTraceId, int nativeStackTraceId, int threadState, int samples) {
         super(time, tid, stackTraceId);
+        this.nativeStackTraceId = nativeStackTraceId;
         this.threadState = threadState;
         this.samples = samples;
     }

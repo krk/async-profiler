@@ -17,12 +17,14 @@ import java.util.BitSet;
 import java.util.Map;
 
 import static one.convert.Frame.*;
+import one.jfr.event.NativeLibrary;
 
 public abstract class JfrConverter extends Classifier {
     protected final JfrReader jfr;
     protected final Arguments args;
     protected final EventCollector collector;
     protected Dictionary<String> methodNames;
+    private SymbolResolver symbolResolver;
 
     public JfrConverter(JfrReader jfr, Arguments args) {
         this.jfr = jfr;
@@ -30,6 +32,7 @@ public abstract class JfrConverter extends Classifier {
 
         EventCollector collector = createCollector(args);
         this.collector = args.nativemem && args.leak ? new MallocLeakAggregator(collector, args.tail) : collector;
+        this.symbolResolver = new SymbolResolver();
     }
 
     public void convert() throws IOException {
@@ -82,7 +85,16 @@ public abstract class JfrConverter extends Classifier {
         long startTicks = args.from != 0 ? toTicks(args.from) : Long.MIN_VALUE;
         long endTicks = args.to != 0 ? toTicks(args.to) : Long.MAX_VALUE;
 
-        for (Event event; (event = jfr.readEvent(eventClass)) != null; ) {
+        // Read both the target event class and NativeLibrary events
+        for (Event event; (event = jfr.readEvent(eventClass, NativeLibrary.class)) != null; ) {
+            // Handle NativeLibrary events to populate symbol resolver
+            if (event instanceof NativeLibrary) {
+                NativeLibrary lib = (NativeLibrary) event;
+                symbolResolver.addLibrary(lib.name, lib.baseAddress, lib.topAddress);
+                continue;
+            }
+
+            // Handle regular events
             if (event.time >= startTicks && event.time <= endTicks) {
                 if (threadStates == null || threadStates.get(((ExecutionSample) event).threadState)) {
                     collector.collect(event);
@@ -177,6 +189,10 @@ public abstract class JfrConverter extends Classifier {
             name = name.concat("[]");
         }
         return name;
+    }
+
+    public String getNativeFrameName(long pc) {
+        return symbolResolver.resolve(pc);
     }
 
     private String toJavaClassName(byte[] symbol, int start, boolean dotted) {

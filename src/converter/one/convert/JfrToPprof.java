@@ -6,8 +6,10 @@
 package one.convert;
 
 import one.jfr.JfrReader;
+import one.jfr.NativeStackTrace;
 import one.jfr.StackTrace;
 import one.jfr.event.Event;
+import one.jfr.event.ExecutionSample;
 import one.proto.Proto;
 
 import java.io.FileOutputStream;
